@@ -1,4 +1,3 @@
-
 import json
 from datetime import date
 from datetime import timedelta
@@ -153,12 +152,14 @@ class notebook():
             print("Please enter valid task number")
 
     def show_all(self):
+        clear_screen()
         temp_table(self.master_list,"sl.no","name","creation_date","due_date","tag").show()
 
     def show_deleted(self):
         if len(self.delete_list) <1:
             print("No items have been deleted")
         else:
+            clear_screen()
             temp_table(self.delete_list,"sl.no","name","creation_date","due_date","tag").show()
 
     def show_today(self):
@@ -166,6 +167,7 @@ class notebook():
         for key,value in self.master_list.items():
             if datetime.strptime(value["due_date"],'%Y-%m-%d').date() == date.today():
                 today_list.update({value["name"]:value["tag"]})
+        clear_screen()
         temp_table(today_list,"name","tag").show()
 
     def check_task(self,task_number):
@@ -245,6 +247,9 @@ def help():
     help_table=temp_table(commands,"Command","Description")
     help_table.show()
     print("")
+
+def clear_screen():
+    os.system('cls')
 
 def mainloop():
     my_notebook=notebook()
