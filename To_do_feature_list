@@ -2,6 +2,6 @@ Future Feature list:
 1. Need to add a search function?
 2. Need to add "back" option
 3. Need to find a way to refresh screen instead of continuously populating the cmd window
-4. Get better at handling exceptions
+4. Get better at handling exceptions - addressed
 5. alarm/ reminder to check to do list at some time during the day.. 
-6. pop-up when i start the computer
+6. pop-up when i start the computer - created a batch file for personal use
