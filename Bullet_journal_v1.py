@@ -1,3 +1,4 @@
+
 import json
 from datetime import date
 from datetime import timedelta
@@ -81,6 +82,7 @@ class task:
                     }
         return self.thing
 
+
 class notebook():
 
     def __init__(self):
@@ -95,39 +97,69 @@ class notebook():
         else:
             self.delete_list={}
 
-    def new_task(self,name):
+    def new_task(self,name,kwargs):
         index=len(self.master_list)
         new_task=task(name)
         self.master_list.update({str(index+1):new_task.construct()})
+        if len(kwargs)>0:
+            for key,value in kwargs.items():
+                if key == "due_date":
+                    self.master_list[str(index+1)]["due_date"]=datetime.strptime(str(value),'%y-%m-%d').strftime('%Y-%m-%d')
+                if key == "tag":
+                    self.master_list[str(index+1)]["tag"]=str(value)
+
         with open('app.json','w') as f:
             json.dump(self.master_list,f) 
 
 
     def migrate_task(self,task_number,migrate_days):
-        notebook.check_task(self,task_number)
-        curr_date=self.master_list[str(task_number-1)]['due_date']
-        new_date=datetime.strptime(curr_date,'%Y-%m-%d').date()+timedelta(days=migrate_days)
-        self.master_list[str(task_number-1)]["due_date"]=str(new_date)
-        notebook.build(self)
-    
+        try:
+            notebook.check_task(self,task_number)
+            curr_date=self.master_list[str(task_number)]['due_date']
+            new_date=datetime.strptime(curr_date,'%Y-%m-%d').date()+timedelta(days=migrate_days)
+            self.master_list[str(task_number)]["due_date"]=str(new_date)
+            notebook.build(self)
+        except:
+            print("Please enter valid task number")
+
     def delete_task(self,task_number):
-        notebook.check_task(self,task_number)
-        self.delete_list.update({str(len(self.delete_list)+1):self.master_list[str(task_number)]})
-        with open('deleted_tasks.json','w') as f:
-            json.dump(self.master_list[str(task_number)],f)
-        del self.master_list[str(task_number)]
-        notebook.build(self)
+        try:
+            notebook.check_task(self,task_number)
+            self.delete_list.update({str(len(self.delete_list)+1):self.master_list[str(task_number)]})
+            with open('deleted_tasks.json','w') as f:
+                json.dump(self.master_list[str(task_number)],f)
+            del self.master_list[str(task_number)]
+            notebook.renumber(self)
+            notebook.build(self)
+        except:
+            print("PLease enter valid task number")
+        # try:
+        #     notebook.check_task(self,task_number)
+        #     self.delete_list.update({str(len(self.delete_list)+1):self.master_list[str(task_number)]})
+        #     with open('deleted_tasks.json','w') as f:
+        #         json.dump(self.master_list[str(task_number)],f)
+        #     del self.master_list[str(task_number)]
+        #     notebook.renumber(self)
+        #     notebook.build(self)
+        # except:
+        #     print("Please enter valid task number")
 
     def edit_tag(self,task_number,new_tag):
-        notebook.check_task(self,task_number)
-        self.master_list[str(task_number-1)]["tag"]=new_tag
-        notebook.build(self)
+        try:
+            notebook.check_task(self,task_number)
+            self.master_list[str(task_number)]["tag"]=new_tag
+            notebook.build(self)
+        except:
+            print("Please enter valid task number")
 
     def show_all(self):
         temp_table(self.master_list,"sl.no","name","creation_date","due_date","tag").show()
 
     def show_deleted(self):
-        temp_table(self.delete_list,"sl.no","name","creation_date","due_date","tag").show()
+        if len(self.delete_list) <1:
+            print("No items have been deleted")
+        else:
+            temp_table(self.delete_list,"sl.no","name","creation_date","due_date","tag").show()
 
     def show_today(self):
         today_list={}
@@ -151,58 +183,85 @@ class notebook():
     def build(self):
         with open('app.json','w') as f:
             json.dump(self.master_list,f) 
-        with open('deleted_tasks.json','w') as f1:
-            json.dump(self.delete_list,f1) 
+        # with open('deleted_tasks.json','w') as f1:
+        #     json.dump(self.delete_list,f1) 
+    
+    def renumber(self):
+        old_keys=[]
+        for key in self.master_list:
+            old_keys.append(int(key))
+        new_keys=[]
+        new_keys.append(old_keys[0])
+        for i in range(1,len(old_keys)):
+            if abs(old_keys[i]-new_keys[i-1])>1 or abs(old_keys[i]-new_keys[i-1])==0 :
+                new_keys.append(new_keys[i-1]+1)
+            else:
+                new_keys.append(old_keys[i])
+        str_keys=[]
+        for i in range(0,len(new_keys)):
+            str_keys.append(str(new_keys[i]))
+        self.master_list=dict(zip(str_keys,list(self.master_list.values())))
 
 commands={  
         "n":"Create new task",
         "d":"delete task. delete_task(sl.no)",
         "m":"move/migrate to different date. migrate_task(task number, no. of days to move)",
         "e":"edit default tag. edit_tag(sl number, tag)",
-        "s_today":"show todays tasks",
-        "s_all":"show all tasks",
+        "s_t":"show todays tasks",
+        "s":"show all tasks",
         "s_del":"show deleted tasks only",
         "help":"invoke command list",
         "ctrl+c":"exit the program"
     }
 
+
 def switch(case,notebook):
     if case == 'n':
-        name=input("Please enter task name")
-        notebook.new_task(str(name))
+        args={}
+        in_cmd=input("Please enter task name(optional tag,due_date). Format <name>,<due_date=yy-mm-dd>,<tag=new_tag>: ").split(',')
+        if len(in_cmd)>1:
+            for i in range(1,len(in_cmd)):
+                key,val=in_cmd[i].split('=')
+                args.update({key:val})
+        notebook.new_task(in_cmd[0],args)   
     elif case == 'd':
-        number=input("Please enter sl no of task to be deleted")
+        number=input("Please enter sl no of task to be deleted: ")
         notebook.delete_task(int(number))
     elif case == 'm':
-        number=input("Please enter sl no of task to be migrated")
-        days_move=input("Please enter the no. of days to be added to task")
+        number,days_move=input("Please enter sl no of task, no. of days to be added to task. format: <sl.no>,<days_move>: ").split(',')
         notebook.migrate_task(int(number),int(days_move))
     elif case == 'e':
-        number=input("Please enter sl no of task to be tagged")
-        tag=input("Please enter the new tag")
+        number,tag=input("Please enter sl no of task, new tag. format: <sl.no>,<tag>: ").split(',')
         notebook.edit_tag(int(number),str(tag))
-    elif case == 's_today':
+    elif case == 's_t':
         notebook.show_today()
-    elif case == 's_all':
+    elif case == 's':
         notebook.show_all()
     elif case =='s_del':
         notebook.show_deleted()
     else:
         raise Exception("Invalid Command - Please check command list")
-
 def help():
     help_table=temp_table(commands,"Command","Description")
     help_table.show()
+    print("")
 
 def mainloop():
     my_notebook=notebook()
     try:
         while True:
+            print()
             option=input("What would you like to do?")
+            print("")
             if option == "help":
                 help()
             else:
-                data=switch(str(option),my_notebook)
+                try:
+                    data=switch(str(option),my_notebook)
+                except:
+                    print("Invalid selection, Please re-enter command")
+                    print("")
+                    help()
                 
     except KeyboardInterrupt:
         print("\n******************* ",end="")
@@ -213,6 +272,3 @@ if __name__ == "__main__":
     print("**************************************************************")
     help()
     mainloop()
-
-
-    
