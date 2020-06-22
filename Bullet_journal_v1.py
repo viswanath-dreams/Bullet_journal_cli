@@ -220,7 +220,7 @@ commands={
 def switch(case,notebook):
     if case == 'n':
         args={}
-        in_cmd=input("Please enter task name(optional tag,due_date). Format <name>,<due_date=yy-mm-dd>,<tag=new_tag>: ").split(',')
+        in_cmd=input("Please enter task name(optional tag,due_date). Format <name>,<due_date=yy-mm-dd>,<tag=new_tag>: ").replace(" ","").split(',')
         if len(in_cmd)>1:
             for i in range(1,len(in_cmd)):
                 key,val=in_cmd[i].split('=')
